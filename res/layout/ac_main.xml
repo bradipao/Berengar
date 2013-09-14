@@ -1,0 +1,151 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:paddingBottom="@dimen/activity_vertical_margin"
+    android:paddingLeft="@dimen/activity_horizontal_margin"
+    android:paddingRight="@dimen/activity_horizontal_margin"
+    android:paddingTop="@dimen/activity_vertical_margin"
+    tools:context=".MainActivity" >
+
+    <TextView
+        android:id="@+id/tvResult"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/hello_world" />
+
+    <Button
+        android:id="@+id/btCatAdd"
+        style="?android:attr/buttonStyleSmall"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/tvResult"
+        android:layout_marginTop="16dp"
+        android:text="+CAT" />
+
+    <EditText
+        android:id="@+id/etCatName"
+        android:layout_width="200dp"
+        android:layout_height="wrap_content"
+        android:layout_alignTop="@id/btCatAdd"
+        android:layout_toRightOf="@id/btCatAdd"
+        android:ems="8" >
+    </EditText>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBottom="@id/etCatName"
+        android:layout_toRightOf="@id/etCatName"
+        android:text="nam" />
+
+    <EditText
+        android:id="@+id/etCatIcon"
+        android:layout_width="200dp"
+        android:layout_height="wrap_content"
+        android:layout_alignLeft="@id/etCatName"
+        android:layout_below="@id/etCatName"
+        android:ems="8" >
+    </EditText>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBottom="@id/etCatIcon"
+        android:layout_toRightOf="@id/etCatIcon"
+        android:text="ico" />
+
+    <Button
+        android:id="@+id/btEvnAdd"
+        style="?android:attr/buttonStyleSmall"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/etCatIcon"
+        android:layout_marginTop="16dp"
+        android:text="+EVN" />
+
+    <EditText
+        android:id="@+id/etEvnIdcat"
+        android:layout_width="200dp"
+        android:layout_height="wrap_content"
+        android:layout_alignTop="@id/btEvnAdd"
+        android:layout_toRightOf="@id/btEvnAdd"
+        android:ems="8" >
+    </EditText>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBottom="@id/etEvnIdcat"
+        android:layout_toRightOf="@id/etEvnIdcat"
+        android:text="idc" />
+
+    <EditText
+        android:id="@+id/etEvnWhen"
+        android:layout_width="200dp"
+        android:layout_height="wrap_content"
+        android:layout_alignLeft="@id/etEvnIdcat"
+        android:layout_below="@id/etEvnIdcat"
+        android:ems="8" >
+    </EditText>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBottom="@id/etEvnWhen"
+        android:layout_toRightOf="@id/etEvnWhen"
+        android:text="whe" />
+
+    <EditText
+        android:id="@+id/etEvnName"
+        android:layout_width="200dp"
+        android:layout_height="wrap_content"
+        android:layout_alignLeft="@id/etEvnWhen"
+        android:layout_below="@id/etEvnWhen"
+        android:ems="8" >
+    </EditText>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBottom="@id/etEvnName"
+        android:layout_toRightOf="@id/etEvnName"
+        android:text="nam" />
+
+    <Button
+        android:id="@+id/btExportJSON"
+        style="?android:attr/buttonStyleSmall"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/etEvnName"
+        android:layout_marginTop="16dp"
+        android:text="EXPORT JSON" />
+
+    <Button
+        android:id="@+id/btImportJSON"
+        style="?android:attr/buttonStyleSmall"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBottom="@id/btExportJSON"
+        android:layout_toRightOf="@id/btExportJSON"
+        android:text="IMPORT JSON" />
+
+    <Button
+        android:id="@+id/btExportXML"
+        style="?android:attr/buttonStyleSmall"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/btExportJSON"
+        android:layout_marginTop="16dp"
+        android:text="EXPORT XML" />
+
+    <Button
+        android:id="@+id/btImportXML"
+        style="?android:attr/buttonStyleSmall"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBottom="@id/btExportXML"
+        android:layout_toRightOf="@id/btExportXML"
+        android:text="IMPORT XML" />
+
+</RelativeLayout>
