@@ -17,6 +17,25 @@ Berengar is an extremely rough Android app designed to develop and test database
 * FileTool.stringRead() reads string from text file in SD card, GZip compression optional
 
 
+### How can I use it?
+
+```java
+// to create database backup in json format and minify it
+String json_backup = DbTool.db2json(dbHelper.getHandleDB(),"optional_db_name").toString(3);
+json_backup = DbTool.jsonMinify(json_backup);
+
+// to create database backup in xml format
+String xml_backup = DbTool.db2xml(dbHelper.getHandleDB(),"optional_db_name");
+
+// to restore database from json
+JSONObject jsonDB = new JSONObject(json_backup);
+iRes = DbTool.json2db(dbHelper.getHandleDB(),jsonDB);
+
+// to restore database from xml
+iRes = DbTool.xml2db(dbHelper.getHandleDB(),xml_backup);
+```
+
+
 ### Limitations
 
 * Tested only with database with 2 tables and about 10 entries
@@ -29,6 +48,7 @@ Berengar is an extremely rough Android app designed to develop and test database
 ### What's next
 
 * Test with bigger databases 
+* Add XML minify function
 
 
 ### Why the name Berengar ?
