@@ -18,7 +18,12 @@ limitations under the License.
 
 package it.bradipao.berengar;
 
+import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
 import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.List;
@@ -41,6 +46,9 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.util.Log;
 import android.util.Xml;
+
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonToken;
 
 public class DbTool {
 
@@ -118,6 +126,132 @@ public class DbTool {
       }
       
       return iRes;
+   }
+
+   //---- GSON2DB -------------------------------------------------------------
+   // strong constraint is order of fields into table object in json file
+   // order should be : table_name / table_sql / cols_name / rows
+   // or : cols_name / table_name / table_sql / rows
+   
+   public static int gson2db(SQLiteDatabase mDB,File jsonFile) {
+      
+      // vars
+      int iTableNum = 0;
+      FileReader fr = null;
+      BufferedReader br = null;
+      JsonReader jr = null;
+      String name = null;
+      String val = null;
+      
+      String mTable = null;
+      String mTableSql = null;
+      ArrayList<String> xmlFields = null;
+      ArrayList<String> xmlValues = null;
+      ContentValues cv = null;
+      
+      // file readers
+      try {
+         fr = new FileReader(jsonFile);
+         br = new BufferedReader(fr);
+         jr = new JsonReader(br);
+      } catch (FileNotFoundException e) {
+         Log.e(LOGTAG,"error in gson2db file readers",e);
+      }
+      
+      // parsing
+      try {
+         // start database transaction
+         mDB.beginTransaction();
+         // open root {
+         jr.beginObject();
+         // iterate through root objects
+         while (jr.hasNext()) {
+            name = jr.nextName();
+            if (jr.peek()==JsonToken.NULL) jr.skipValue();
+            // number of tables
+            else if (name.equals("tables_num")) {
+               val = jr.nextString();
+               iTableNum = Integer.parseInt(val);
+               if (GOLOG) Log.d(LOGTAG,"TABLE NUM : "+iTableNum);
+            }
+            // iterate through tables array
+            else if (name.equals("tables")) {
+               jr.beginArray();
+               while (jr.hasNext()) {
+                  // start table
+                  mTable = null;
+                  xmlFields = null;
+                  jr.beginObject();
+                  while (jr.hasNext()) {
+                     name = jr.nextName();
+                     if (jr.peek()==JsonToken.NULL) jr.skipValue();
+                     // table name
+                     else if (name.equals("table_name")) {
+                        mTable = jr.nextString();
+                     }
+                     // table sql
+                     else if (name.equals("table_sql")) {
+                        mTableSql = jr.nextString();
+                        if ((mTable!=null)&&(mTableSql!=null)) {
+                           mDB.execSQL("DROP TABLE IF EXISTS "+mTable);
+                           mDB.execSQL(mTableSql);
+                           if (GOLOG) Log.d(LOGTAG,"DROPPED AND CREATED TABLE : "+mTable);
+                        }
+                     }
+                     // iterate through columns name
+                     else if (name.equals("cols_name")) {
+                        jr.beginArray();
+                        while (jr.hasNext()) {
+                           val = jr.nextString();
+                           if (xmlFields==null) xmlFields = new ArrayList<String>();
+                           xmlFields.add(val);
+                        }
+                        jr.endArray();
+                        if (GOLOG) Log.d(LOGTAG,"COLUMN NAME : "+xmlFields.toString());
+                     }
+                     // iterate through rows
+                     else if (name.equals("rows")) {
+                        jr.beginArray();
+                        while (jr.hasNext()) {
+                           jr.beginArray();
+                           // iterate through values in row
+                           xmlValues = null;
+                           cv = null;
+                           while (jr.hasNext()) {
+                              val = jr.nextString();
+                              if (xmlValues==null) xmlValues = new ArrayList<String>();
+                              xmlValues.add(val);
+                           }
+                           jr.endArray();
+                           // add to database
+                           cv = new ContentValues();
+                           for (int j=0;j<xmlFields.size();j++) cv.put( xmlFields.get(j) , xmlValues.get(j) );
+                           mDB.insert(mTable,null,cv);
+                           if (GOLOG) Log.d(LOGTAG,"INSERT IN "+mTable+" : "+xmlValues.toString());
+                        }
+                        jr.endArray();
+                     }
+                     else jr.skipValue();
+                  }
+                  // end table
+                  jr.endObject();
+               }
+               jr.endArray();
+            }
+            else jr.skipValue();   
+         }
+         // close root }
+         jr.endObject();
+         jr.close();
+         // successfull transaction
+         mDB.setTransactionSuccessful();
+      } catch (IOException e) {
+         Log.e(LOGTAG,"error in gson2db gson parsing",e);
+      } finally {
+         mDB.endTransaction();
+      }
+
+      return iTableNum;
    }
    
    //---- DB2JSON -------------------------------------------------------------
@@ -360,7 +494,7 @@ public class DbTool {
             cv = new ContentValues();
             for (int j=0;j<xmlFields.size();j++) cv.put( xmlFields.get(j) , xmlValues.get(j) );
             mDB.insert(mTable,null,cv);
-            if (GOLOG) Log.d(LOGTAG,"INSERT IN "+mTable+" ID="+xmlValues.get(0));
+            if (GOLOG) Log.d(LOGTAG,"INSERT IN "+mTable+" : "+xmlValues.toString());
          }
          
          // end of table

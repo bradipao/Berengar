@@ -51,7 +51,7 @@ public class MainActivity extends Activity {
    Button btCatAdd,btEvnAdd;
    EditText etCatName,etCatIcon;
    EditText etEvnIdcat,etEvnWhen,etEvnName;
-   Button btExportJson,btImportJson,btExportXml,btImportXml;
+   Button btExportJson,btImportJson,btExportGson,btImportGson,btExportXml,btImportXml;
    
    @Override
    protected void onCreate(Bundle savedInstanceState) {
@@ -72,6 +72,8 @@ public class MainActivity extends Activity {
       etEvnName = (EditText) findViewById(R.id.etEvnName);
       btExportJson = (Button) findViewById(R.id.btExportJSON);
       btImportJson = (Button) findViewById(R.id.btImportJSON);
+      btExportGson = (Button) findViewById(R.id.btExportGSON);
+      btImportGson = (Button) findViewById(R.id.btImportGSON);
       btExportXml = (Button) findViewById(R.id.btExportXML);
       btImportXml = (Button) findViewById(R.id.btImportXML);
       
@@ -159,6 +161,17 @@ public class MainActivity extends Activity {
                Log.e(LOGTAG,"error in new JSONObject(jsonDB)",e);
             }
             
+            tvRes.setText("num tables : "+String.valueOf(iRes));
+         }
+      });
+
+      // button btImport listener
+      btImportGson.setOnClickListener(new View.OnClickListener() {
+         @Override
+         public void onClick(View v) {
+            // from json file to database
+            int iRes = 0;
+            iRes = DbTool.gson2db(dbHelper.getHandleDB(),jsonFile);           
             tvRes.setText("num tables : "+String.valueOf(iRes));
          }
       });

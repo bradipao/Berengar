@@ -119,7 +119,7 @@
         android:layout_height="wrap_content"
         android:layout_below="@id/etEvnName"
         android:layout_marginTop="16dp"
-        android:text="EXPORT JSON" />
+        android:text="EXP json" />
 
     <Button
         android:id="@+id/btImportJSON"
@@ -128,7 +128,25 @@
         android:layout_height="wrap_content"
         android:layout_alignBottom="@id/btExportJSON"
         android:layout_toRightOf="@id/btExportJSON"
-        android:text="IMPORT JSON" />
+        android:text="IMP json" />
+
+    <Button
+        android:id="@+id/btExportGSON"
+        style="?android:attr/buttonStyleSmall"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBottom="@id/btExportJSON"
+        android:layout_toRightOf="@id/btImportJSON"
+        android:text="EXP gson" />
+
+    <Button
+        android:id="@+id/btImportGSON"
+        style="?android:attr/buttonStyleSmall"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBottom="@id/btExportJSON"
+        android:layout_toRightOf="@id/btExportGSON"
+        android:text="IMP gson" />
 
     <Button
         android:id="@+id/btExportXML"
