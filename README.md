@@ -11,6 +11,7 @@ Berengar is an extremely rough Android app designed to develop and test database
 * There is a rough user interface to insert data into two database tables
 * DbTool.db2json() exports full database to json string
 * DbTool.json2db() imports full database from json string
+* DbTool.db2gson() exports full database to json file (no String limitation)
 * DbTool.gson2db() imports full database from json file (no String limitation)
 * DbTool.db2xml() exports full database to xml string
 * DbTool.xml2db() imports full database from xml string
@@ -27,6 +28,10 @@ json_backup = DbTool.jsonMinify(json_backup);
 
 // to create database backup in xml format
 String xml_backup = DbTool.db2xml(dbHelper.getHandleDB(),"optional_db_name");
+
+// to create database backup in json using GSON library and streaming generator
+File jsonFile = new File(exportDir,"myfilename.json");
+iRes = DbTool.db2gson(dbHelper.getHandleDB(),jsonFile);
 
 // to restore database from json using DOM-like access
 JSONObject jsonDB = new JSONObject(json_backup);
@@ -45,14 +50,12 @@ iRes = DbTool.xml2db(dbHelper.getHandleDB(),xml_backup);
 
 * Tested only with database with 2 tables and about 10 entries
 * Many error checks are missing
-* String limitations
-* JSON parsing implemented with org.json.JSONObject
+* String limitations in XML functions (limitation to be removed)
 * XML parsing implemented with SAX
 
 
 ### What's next
 
-* Add db2gson (to remove String limitation)
 * Test with bigger databases 
 * Add XML minify function
 

@@ -19,10 +19,12 @@ limitations under the License.
 package it.bradipao.berengar;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.util.ArrayList;
@@ -49,6 +51,7 @@ import android.util.Xml;
 
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonToken;
+import com.google.gson.stream.JsonWriter;
 
 public class DbTool {
 
@@ -349,6 +352,112 @@ public class DbTool {
       
       // return String
       return jsonTable;
+   }
+   
+   //---- DB2GSON -------------------------------------------------------------
+   
+   public static int db2gson(SQLiteDatabase mDB,File jsonFile) {
+      // vars
+      int iTableNum = 0;
+      FileWriter fw = null;
+      BufferedWriter bw = null;
+      JsonWriter jw = null; 
+      String sqlquery = "";
+      Cursor cur = null; 
+      
+      String mTable = null;
+      String mTableSql = null;
+      ArrayList<String> aTable = new ArrayList<String>();
+      ArrayList<String> aTableSql = new ArrayList<String>();
+      
+      // file writers
+      try {
+         fw = new FileWriter(jsonFile);
+         bw = new BufferedWriter(fw);
+         jw = new JsonWriter(bw);
+      } catch (FileNotFoundException e) {
+         Log.e(LOGTAG,"error in db2gson file writers",e);
+      } catch (IOException e) {
+         Log.e(LOGTAG,"error in db2gson file writers",e);
+      }
+      
+      // read tables list and extract name and createsql
+      sqlquery = "select * from sqlite_master";
+      cur = mDB.rawQuery(sqlquery,null);
+      while (cur.moveToNext()) {
+         mTable = cur.getString(cur.getColumnIndex("name"));
+         mTableSql = cur.getString(cur.getColumnIndex("sql"));
+         // add new table, and skip metadata, sequence, and uidx before exporting tables
+         if (!mTable.equals("android_metadata") && !mTable.equals("sqlite_sequence")
+         && !mTable.startsWith("uidx") && !mTable.startsWith("idx_") && !mTable.startsWith("_idx")) {
+            iTableNum++;
+            aTable.add(mTable);
+            aTableSql.add(mTableSql);
+            if (GOLOG) Log.d(LOGTAG,"TABLE NAME : "+mTable);
+         }
+      }
+      cur.close();
+      
+      // start writing json
+      try {
+         // open root {
+         jw.beginObject();
+         // header elements
+         jw.name("tables_num").value(Integer.toString(iTableNum));
+         jw.name("jsondb_format").value("1");
+         // tables name
+         jw.name("tables_name");
+         jw.beginArray();
+         for(int i=0;i<aTable.size();i++) jw.value(aTable.get(i));
+         jw.endArray();
+         
+         // open tables array
+         jw.name("tables");
+         jw.beginArray();
+         // iterate through tables
+         for(int i=0;i<aTable.size();i++) {
+            // open table object
+            jw.beginObject();
+            // table name and table sql
+            jw.name("table_name").value(aTable.get(i));
+            jw.name("table_sql").value(aTableSql.get(i));
+            // iteratew through rows
+            sqlquery = "select * from " + aTable.get(i);
+            cur = mDB.rawQuery(sqlquery,null);
+            int k = -1;
+            while (cur.moveToNext()) {
+               if (k==-1) {
+                  // column names generated at very first row
+                  jw.name("cols_name");
+                  jw.beginArray();
+                  for (k=0;k<cur.getColumnCount();k++) jw.value(cur.getColumnName(k));
+                  jw.endArray();
+                  // open rows array
+                  jw.name("rows");
+                  jw.beginArray();
+               }
+               // get columns values in row
+               jw.beginArray();
+               for (k=0;k<cur.getColumnCount();k++) jw.value(cur.getString(k));
+               jw.endArray();
+            }
+            // close rows array
+            jw.endArray();
+            // close table object
+            jw.endObject();
+         }
+         // close tables array
+         jw.endArray();
+         
+         // close root {
+         jw.endObject();
+         jw.close();
+      } catch (IOException e) {
+         Log.e(LOGTAG,"error in db2gson file writers",e);
+      }
+
+      // return number of tables
+      return iTableNum;
    }
    
    //---- XML2DB --------------------------------------------------------------

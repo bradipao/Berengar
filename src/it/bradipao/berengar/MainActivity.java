@@ -82,7 +82,7 @@ public class MainActivity extends Activity {
          root = Environment.getExternalStorageDirectory();
          exportDir = new File(root.getAbsolutePath()+"/berengar");
          if (!exportDir.exists()) exportDir.mkdir();
-         if (exportDir.exists()) jsonFile = new File(exportDir,"events.sqlite.json");
+         if (exportDir.exists()) jsonFile = new File(exportDir,"events2.sqlite.json");
          if (exportDir.exists()) xmlFile = new File(exportDir,"events.sqlite.xml");
       }
       
@@ -165,6 +165,17 @@ public class MainActivity extends Activity {
          }
       });
 
+      // button btExport listener
+      btExportGson.setOnClickListener(new View.OnClickListener() {
+         @Override
+         public void onClick(View v) {
+            // from database to json file
+            int iRes = 0;
+            iRes = DbTool.db2gson(dbHelper.getHandleDB(),jsonFile);
+            tvRes.setText("num tables : "+String.valueOf(iRes));
+         }
+      });
+      
       // button btImport listener
       btImportGson.setOnClickListener(new View.OnClickListener() {
          @Override
