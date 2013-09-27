@@ -18,15 +18,15 @@ limitations under the License.
 
 package it.bradipao.berengar;
 
+import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
-import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -148,8 +148,8 @@ public class DbTool {
       
       String mTable = null;
       String mTableSql = null;
-      ArrayList<String> xmlFields = null;
-      ArrayList<String> xmlValues = null;
+      ArrayList<String> aFields = null;
+      ArrayList<String> aValues = null;
       ContentValues cv = null;
       
       // file readers
@@ -183,7 +183,7 @@ public class DbTool {
                while (jr.hasNext()) {
                   // start table
                   mTable = null;
-                  xmlFields = null;
+                  aFields = null;
                   jr.beginObject();
                   while (jr.hasNext()) {
                      name = jr.nextName();
@@ -206,11 +206,11 @@ public class DbTool {
                         jr.beginArray();
                         while (jr.hasNext()) {
                            val = jr.nextString();
-                           if (xmlFields==null) xmlFields = new ArrayList<String>();
-                           xmlFields.add(val);
+                           if (aFields==null) aFields = new ArrayList<String>();
+                           aFields.add(val);
                         }
                         jr.endArray();
-                        if (GOLOG) Log.d(LOGTAG,"COLUMN NAME : "+xmlFields.toString());
+                        if (GOLOG) Log.d(LOGTAG,"COLUMN NAME : "+aFields.toString());
                      }
                      // iterate through rows
                      else if (name.equals("rows")) {
@@ -218,19 +218,19 @@ public class DbTool {
                         while (jr.hasNext()) {
                            jr.beginArray();
                            // iterate through values in row
-                           xmlValues = null;
+                           aValues = null;
                            cv = null;
                            while (jr.hasNext()) {
                               val = jr.nextString();
-                              if (xmlValues==null) xmlValues = new ArrayList<String>();
-                              xmlValues.add(val);
+                              if (aValues==null) aValues = new ArrayList<String>();
+                              aValues.add(val);
                            }
                            jr.endArray();
                            // add to database
                            cv = new ContentValues();
-                           for (int j=0;j<xmlFields.size();j++) cv.put( xmlFields.get(j) , xmlValues.get(j) );
+                           for (int j=0;j<aFields.size();j++) cv.put( aFields.get(j) , aValues.get(j) );
                            mDB.insert(mTable,null,cv);
-                           if (GOLOG) Log.d(LOGTAG,"INSERT IN "+mTable+" : "+xmlValues.toString());
+                           if (GOLOG) Log.d(LOGTAG,"INSERT IN "+mTable+" : "+aValues.toString());
                         }
                         jr.endArray();
                      }
@@ -459,9 +459,197 @@ public class DbTool {
       // return number of tables
       return iTableNum;
    }
+
+   //---- XML2DB --------------------------------------------------------------
+
+   // TODO : xml2db version with xmlFile passed to parser and used in place of ByteArrayInputStream
+   
+   public static int xml2db(SQLiteDatabase mDB,File xmlFile) {   
+      XmlDbParser xdp = new XmlDbParser(mDB);
+      return xdp.parse(xmlFile);
+   }
+   
+   public static class XmlDbParser extends DefaultHandler {
+      // nodes
+      final String XML_DATABASE = "database";
+      final String XML_DBNAME = "dbname";
+      final String XML_TABLES = "tables";
+      final String XML_TABLE = "table";
+      final String XML_TABLENAME = "tablename";
+      final String XML_TABLESQL = "tablesql";
+      final String XML_COLSNAME = "colsname";
+      final String XML_ROWS = "rows";
+      final String XML_ROW = "r";
+      final String XML_COL = "c";
+      
+      // section flags
+      boolean bTableName = false;
+      boolean bTableSql = false;
+      boolean bColsName = false;
+      boolean bC = false;
+      boolean bR = false;
+      
+      // vars
+      FileInputStream fis = null;
+      BufferedInputStream bis = null;
+      SQLiteDatabase mDB = null;
+      int iTableNum = 0;
+      String mNode = null;
+      String mVal = null;
+      String mTable = null;
+      ArrayList<String> xmlFields = null;
+      ArrayList<String> xmlValues = null;
+      ContentValues cv = null;
+      
+      // constructor
+      XmlDbParser(SQLiteDatabase db) {
+         mDB = db;
+      }
+      
+      // parse method
+      public int parse(File xmlFile) {
+         // create parse factory
+         SAXParserFactory factory = SAXParserFactory.newInstance();
+         try {
+            SAXParser parser = factory.newSAXParser();
+            fis = new FileInputStream(xmlFile);
+            bis = new BufferedInputStream(fis);
+            parser.parse(bis,this);
+         } catch (Exception e) {
+            Log.e(LOGTAG,"error in xml2db",e);
+         } finally {
+            if (mDB.inTransaction()) mDB.endTransaction();
+         }
+         // return number of tables written in database
+         return iTableNum;
+      }
+      
+      // start element method
+      @Override
+      public void startElement(String uri,String localName,String name,Attributes attributes) throws SAXException {
+         super.startElement(uri,localName,name,attributes);
+         
+         // setting mNode
+         if (name.trim().length()==0) mNode = localName;
+         else mNode = name;
+         
+         // reset values at table start and begin transaction
+         if (mNode.equals(XML_TABLE)) {
+            mVal = null;
+            mTable = null;
+            xmlFields = null;
+            mDB.beginTransaction();
+            if (GOLOG) Log.d(LOGTAG,"BEGIN TABLE");
+         }
+         
+         // reset values at row start
+         if (mNode.equals(XML_ROW)) {
+            xmlValues = null;
+            cv = null;
+         }
+         
+         // start node flag
+         if (mNode.equals(XML_TABLENAME)) bTableName = true;
+         if (mNode.equals(XML_TABLESQL)) bTableSql = true;
+         if (mNode.equals(XML_COLSNAME)) bColsName = true;
+         if (mNode.equals(XML_COL)) bC = true;
+         if (mNode.equals(XML_ROW)) bR = true;
+
+      }
+      
+      // characters method
+      @Override
+      public void characters(char[] ch,int start,int length) throws SAXException {
+         super.characters(ch,start,length);
+         
+         // save table name
+         if (bTableName) {
+            mTable = new String(ch).substring(start,start+length);
+            if (GOLOG) Log.d(LOGTAG,"NEW TABLE : "+mTable);
+         }
+         
+         // drope table and create new one, transactioned
+         if (bTableSql) {
+            String sCreateSql = new String(ch).substring(start,start+length);
+            if (mTable!=null) {
+               mDB.execSQL("DROP TABLE IF EXISTS "+mTable);
+               mDB.execSQL(sCreateSql);
+               if (GOLOG) Log.d(LOGTAG,"DROPPED AND CREATED TABLE : "+mTable);
+            }
+         }
+         
+         // fetching columns names
+         if (bColsName && bC) {
+            mVal = new String(ch).substring(start,start+length);
+            if (xmlFields==null) xmlFields = new ArrayList<String>();
+            xmlFields.add(mVal);
+         }
+         
+         // fetching columns values
+         if (bR && bC) {
+            mVal = new String(ch).substring(start,start+length);
+            if (xmlValues==null) xmlValues = new ArrayList<String>();
+            xmlValues.add(mVal);
+         }
+            
+      }
+      
+      // end element method
+      @Override
+      public void endElement(String uri,String localName,String name) throws SAXException {
+         super.endElement(uri,localName,name);
+         
+         // setting mNode
+         if (name.trim().length()==0) mNode = localName;
+         else mNode = name;
+         if (mNode==null) return;
+         
+         // insert at end of row
+         if (mNode.equals(XML_ROW)) {
+            cv = new ContentValues();
+            for (int j=0;j<xmlFields.size();j++) cv.put( xmlFields.get(j) , xmlValues.get(j) );
+            mDB.insert(mTable,null,cv);
+            if (GOLOG) Log.d(LOGTAG,"INSERT IN "+mTable+" : "+xmlValues.toString());
+         }
+         
+         // end of table
+         if (mNode.equals(XML_TABLE)) {
+            iTableNum++;
+            mDB.setTransactionSuccessful();
+            mDB.endTransaction();
+            if (GOLOG) Log.d(LOGTAG,"END TABLE");
+         }
+         
+         // end of database
+         if (mNode.equals(XML_DATABASE)) {
+            if (GOLOG) Log.d(LOGTAG,"END IMPORT");
+         }
+         
+         // end node flags
+         if (mNode.equals(XML_TABLENAME)) bTableName = false;
+         if (mNode.equals(XML_TABLESQL)) bTableSql = false;
+         if (mNode.equals(XML_COLSNAME)) bColsName = false;
+         if (mNode.equals(XML_COL)) bC = false;
+         if (mNode.equals(XML_ROW)) bR = false;
+         
+      }
+      
+      // start and end document method
+      @Override
+      public void startDocument() throws SAXException {
+         super.startDocument();
+      }
+      @Override
+      public void endDocument() throws SAXException {
+         super.endDocument();
+      } 
+      
+   }
+
    
    //---- XML2DB --------------------------------------------------------------
-   
+   // obsolete : to be removed
+   /*
    public static int xml2db(SQLiteDatabase mDB,String xmlDB) {   
       XmlDbParser xdp = new XmlDbParser(mDB);
       return xdp.parse(xmlDB.getBytes());
@@ -638,10 +826,133 @@ public class DbTool {
       } 
       
    }
-
+   */
    
    //---- DB2XML --------------------------------------------------------------
    
+   public static int db2xml(SQLiteDatabase mDB,File xmlFile) {
+      // vars
+      final String XML_DATABASE = "database";
+      final String XML_DBNAME = "dbname";
+      final String XML_TABLES = "tables";
+      final String XML_TABLE = "table";
+      final String XML_TABLENAME = "tablename";
+      final String XML_TABLESQL = "tablesql";
+      final String XML_COLSNAME = "colsname";
+      final String XML_ROWS = "rows";
+      final String XML_ROW = "r";
+      final String XML_COL = "c";
+      
+      // tables list query and cursor
+      int iTableNum = 0;
+      FileWriter fw = null;
+      BufferedWriter bw = null;
+      XmlSerializer sr = Xml.newSerializer();
+      
+      String tblquery = "select * from sqlite_master";
+      Cursor tblcur = mDB.rawQuery(tblquery,null);
+      String rowquery = "";
+      Cursor rowcur = null;
+
+      // file writers
+      try {
+         fw = new FileWriter(xmlFile);
+         bw = new BufferedWriter(fw);
+         sr.setOutput(bw);
+      } catch (FileNotFoundException e) {
+         Log.e(LOGTAG,"error in db2gson file writers",e);
+      } catch (IOException e) {
+         Log.e(LOGTAG,"error in db2gson file writers",e);
+      }
+      // xml serializer
+      
+      try {
+         // prepare xml document
+         sr.startDocument("UTF-8",true);
+         sr.setFeature("http://xmlpull.org/v1/doc/features.html#indent-output",true);
+         
+         // start document
+         sr.startTag("",XML_DATABASE);
+         sr.startTag("",XML_DBNAME);
+         sr.text(xmlFile.getName());
+         sr.endTag("",XML_DBNAME);
+         sr.startTag("",XML_TABLES);
+         
+         // iterate through tables
+         String sTableName = "";
+         String sTableSql = "";
+         while (tblcur.moveToNext()) {
+            sTableName = tblcur.getString(tblcur.getColumnIndex("name"));
+            sTableSql = tblcur.getString(tblcur.getColumnIndex("sql"));
+            if (GOLOG) Log.d(LOGTAG,"TABLE NAME : "+sTableName);
+            // skip metadata, sequence, and uidx before exporting tables
+            if (!sTableName.equals("android_metadata") && !sTableName.equals("sqlite_sequence")
+            && !sTableName.startsWith("uidx") && !sTableName.startsWith("idx_") && !sTableName.startsWith("_idx")) {
+
+               // table query and cursor
+               iTableNum++;
+               rowquery = "select * from " + sTableName;
+               rowcur = mDB.rawQuery(rowquery,null);
+               // exporting table
+               sr.startTag("",XML_TABLE);
+               sr.startTag("",XML_TABLENAME);
+               sr.text(sTableName);
+               sr.endTag("",XML_TABLENAME);
+               if ((sTableSql!=null)&&(!sTableSql.isEmpty())) {
+                  sr.startTag("",XML_TABLESQL);
+                  sr.text(sTableSql);
+                  sr.endTag("",XML_TABLESQL);
+               }
+               // iteratew through rows
+               int i = -1;
+               while (rowcur.moveToNext()) {
+                  // at first element store column names
+                  if (i==-1) {
+                     sr.startTag("",XML_COLSNAME);
+                     for (i=0;i<rowcur.getColumnCount();i++) {
+                        sr.startTag("",XML_COL);
+                        sr.text(rowcur.getColumnName(i));
+                        sr.endTag("",XML_COL);
+                     }
+                     sr.endTag("",XML_COLSNAME);
+                     sr.startTag("",XML_ROWS);
+                  }
+                  // get values
+                  sr.startTag("",XML_ROW);
+                  for (i=0;i<rowcur.getColumnCount();i++) {
+                     sr.startTag("",XML_COL);
+                     sr.text(rowcur.getString(i));
+                     sr.endTag("",XML_COL);
+                  }
+                  sr.endTag("",XML_ROW);
+               }
+               // finishing table query
+               rowcur.close();
+               sr.endTag("",XML_ROWS);
+               sr.endTag("",XML_TABLE);
+
+            }
+         }
+         // finishing table query
+         tblcur.close();
+         sr.endTag("",XML_TABLES);
+         sr.endTag("",XML_DATABASE);
+         
+         // finishing
+         sr.endDocument();
+         sr.flush();
+      
+      } catch (Exception e) {
+         Log.e(LOGTAG,"error in db2xml",e);
+      }
+   
+      return iTableNum;
+   }
+ 
+   
+   //---- DB2XML --------------------------------------------------------------
+   // obsolete : to be removed
+   /*
    public static String db2xml(SQLiteDatabase mDB,String sDbName) {
       // vars
       final String XML_DATABASE = "database";
@@ -669,7 +980,7 @@ public class DbTool {
          // prepare xml document
          sr.setOutput(sw);
          sr.startDocument("UTF-8",true);
-         sr.setFeature("http://xmlpull.org/v1/doc/features.html#indent-output",true);
+         sr.setFeature("http://xmlpull.org/v1/doc/features.html#indent-output",false);
          
          // start document
          sr.startTag("",XML_DATABASE);
@@ -748,10 +1059,10 @@ public class DbTool {
    
       return sw.toString();
    }
-   
+   */
    //---- TABLE2XML -----------------------------------------------------------
-   // to test or remove
-   
+   // obsolete : to be removed
+   /*
    public static String table2xml(SQLiteDatabase mDB,String sTableName,String sTableSql,XmlSerializer xsr) {
       // vars
       //StringBuilder sb = new StringBuilder(256);
@@ -832,7 +1143,7 @@ public class DbTool {
       // if XMLserializer created here, return all XML else return empty
       if (xsr==null) return sw.toString(); else return "";
    }
-
+   */
    
    //---- JSONMINIFY ----------------------------------------------------------
    // Java porting created by Bernhard Gass on 8/01/13

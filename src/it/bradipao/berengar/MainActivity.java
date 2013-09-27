@@ -83,7 +83,7 @@ public class MainActivity extends Activity {
          exportDir = new File(root.getAbsolutePath()+"/berengar");
          if (!exportDir.exists()) exportDir.mkdir();
          if (exportDir.exists()) jsonFile = new File(exportDir,"events2.sqlite.json");
-         if (exportDir.exists()) xmlFile = new File(exportDir,"events.sqlite.xml");
+         if (exportDir.exists()) xmlFile = new File(exportDir,"events2.sqlite.xml");
       }
       
       // button btCatAdd listener
@@ -191,6 +191,11 @@ public class MainActivity extends Activity {
       btExportXml.setOnClickListener(new View.OnClickListener() {
          @Override
          public void onClick(View v) {
+            // from database to xml file
+            int iRes = 0;
+            iRes = DbTool.db2xml(dbHelper.getHandleDB(),xmlFile);
+            tvRes.setText("num tables : "+String.valueOf(iRes));            
+            /*
             // from database to json string
             String so = "";
             try {
@@ -205,6 +210,7 @@ public class MainActivity extends Activity {
                Log.e(LOGTAG,"error in FileWriter",e);
             }
             tvRes.setText("Database backup saved on SD");
+            */
          }
       });
       
@@ -212,6 +218,11 @@ public class MainActivity extends Activity {
       btImportXml.setOnClickListener(new View.OnClickListener() {
          @Override
          public void onClick(View v) {
+            // from database to xml file
+            int iRes = 0;
+            iRes = DbTool.xml2db(dbHelper.getHandleDB(),xmlFile);
+            tvRes.setText("num tables : "+String.valueOf(iRes));   
+            /*
             // from text file to xml string
             String si = "";
             try {
@@ -225,9 +236,9 @@ public class MainActivity extends Activity {
                iRes = DbTool.xml2db(dbHelper.getHandleDB(),si);
             } catch (Exception e) {
                Log.e(LOGTAG,"error in xml2db",e);
-            }
-            
+            }           
             tvRes.setText("num tables : "+String.valueOf(iRes));
+            */
          }
       });
       
